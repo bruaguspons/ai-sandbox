@@ -1,0 +1,18 @@
+name: claude-code-dev
+
+services:
+  devcontainer:
+    build:
+      context: .
+      dockerfile: .devcontainer/Dockerfile
+    volumes:
+      - ./src:/workspaces:cached
+      # - claude-config:/home/node/.claude
+      # - node-modules:/workspaces/node_modules
+    ports:
+      - "54321:54321"
+    command: sleep infinity
+
+volumes:
+  claude-config:
+  node-modules:
