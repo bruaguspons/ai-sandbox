@@ -1,0 +1,4 @@
+workspaces/*
+!workspaces/.gitkeep
+.atl/
+.claude

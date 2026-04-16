@@ -1,18 +1,42 @@
-name: claude-code-dev
-
 services:
   devcontainer:
     build:
       context: .
       dockerfile: .devcontainer/Dockerfile
     volumes:
-      - ./src:/workspaces:cached
-      # - claude-config:/home/node/.claude
-      # - node-modules:/workspaces/node_modules
-    ports:
-      - "54321:54321"
+      # Workspace principal
+      - ./workspaces:/workspaces:cached
+
+      # Persistir configuración de Claude Code entre rebuilds
+      - claude-config:/root/.claude
+
+      # Persistir historial de bash/zsh
+      - shell-history:/root/.shell_history
+
+      # Montar el socket de Docker del host para usar Docker-in-Docker
+      # - /var/run/docker.sock:/var/run/docker.sock
+
+      # Caché de npm/bun para no re-descargar paquetes en cada build
+      # - npm-cache:/root/.npm
+      # - bun-cache:/root/.bun/install/cache
+
+    # Necesario para que nvm y bun estén disponibles en sesiones interactivas
     command: sleep infinity
+
+    # Permite usar herramientas de red como lsof, ss, etc.
+    network_mode: host  # o usar bridge si preferís aislamiento
+
+    # Capacidades extra útiles para desarrollo
+    cap_add:
+      - SYS_PTRACE   # permite strace y debuggers
+    security_opt:
+      - seccomp:unconfined  # necesario para algunos debuggers
+
+    # Evita que el container se reinicie solo (VS Code lo maneja)
+    restart: "no"
 
 volumes:
   claude-config:
-  node-modules:
+  shell-history:
+  npm-cache:
+  bun-cache:

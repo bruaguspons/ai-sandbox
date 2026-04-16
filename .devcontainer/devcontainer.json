@@ -4,26 +4,94 @@
   "service": "devcontainer",
   "workspaceFolder": "/workspaces",
 
-  "remoteUser": "node",
+  "remoteUser": "root", // 👈 cambiado para coincidir con el Dockerfile
 
   "customizations": {
     "vscode": {
       "extensions": [
+        // Docker & containers
         "ms-azuretools.vscode-docker",
+
+        // Git
         "eamodio.gitlens",
+        "mhutchie.git-graph",
+
+        // Formato y linting
         "esbenp.prettier-vscode",
-        "dbaeumer.vscode-eslint"
+        "dbaeumer.vscode-eslint",
+        "timonwong.shellcheck", // valida shell scripts (ya tenés shellcheck instalado)
+
+        // Python
+        "ms-python.python",
+        "ms-python.black-formatter",
+
+        // Go
+        "golang.go",
+
+        // General dev
+        "usernamehw.errorlens",       // muestra errores inline
+        "christian-kohler.path-intellisense",
+        "wayou.vscode-todo-highlight", // resalta TODO/FIXME
+
+        // AI / Claude Code
+        "anthropic.claude-code"        // extensión oficial si la usás desde VS Code
       ],
       "settings": {
         "terminal.integrated.defaultProfile.linux": "bash",
-        "editor.formatOnSave": true
+        "terminal.integrated.profiles.linux": {
+          "bash": { "path": "/bin/bash" },
+          "zsh":  { "path": "/bin/zsh" }
+        },
+
+        // Editor
+        "editor.formatOnSave": true,
+        "editor.rulers": [80, 120],
+        "editor.bracketPairColorization.enabled": true,
+
+        // Git
+        "git.autofetch": true,
+
+        // Archivos
+        "files.trimTrailingWhitespace": true,
+        "files.insertFinalNewline": true,
+
+        // Python
+        "python.defaultInterpreterPath": "/usr/bin/python3",
+        // "[python]": { "editor.defaultFormatter": "ms-python.black-formatter" },
+
+        // Go
+        "go.toolsManagement.autoUpdate": true
       }
     }
   },
 
-  "postStartCommand": "claude --version && echo '✅ Claude Code listo'",
+  // Puertos comunes de desarrollo
+  "forwardPorts": [
+    3000,   // Node / React / Next.js dev server
+    4000,   // alternativa común
+    5000,   // Flask / Express
+    5432,   // PostgreSQL
+    6379,   // Redis
+    8080,   // HTTP alternativo / proxies
+    9000    // varios servicios
+    // 54321   // tu puerto original (Supabase local?)
+  ],
 
-  "forwardPorts": [54321],
+  // Etiquetas para que VS Code muestre nombres en el panel de puertos
+  "portsAttributes": {
+    "3000": { "label": "Dev Server",   "onAutoForward": "notify" },
+    "5432": { "label": "PostgreSQL",   "onAutoForward": "silent" },
+    "6379": { "label": "Redis",        "onAutoForward": "silent" },
+    "8080": { "label": "HTTP Alt",     "onAutoForward": "notify" }
+    // "54321": { "label": "Supabase",    "onAutoForward": "notify" }
+  },
+  "otherPortsAttributes": { "onAutoForward": "silent" },
+
+  // postCreateCommand se ejecuta una sola vez al crear el container
+  "postCreateCommand": "git config --global --add safe.directory /workspaces",
+
+  // postStartCommand se ejecuta cada vez que arranca
+  "postStartCommand": "claude --version && echo '✅ Claude Code listo'",
 
   "features": {}
 }
