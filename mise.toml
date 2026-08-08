@@ -6,6 +6,7 @@
 node = "lts"
 bun  = "latest"
 pnpm = "latest"
+rust = "latest"
 
 # ─── CLIs recomendadas para Claude Code ───────────────────────────
 yq                = "latest"  # jq para YAML/TOML/XML
