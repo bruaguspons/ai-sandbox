@@ -46,6 +46,9 @@ RUN curl -fsSL https://mise.run | sh
 COPY mise.toml /root/.config/mise/config.toml
 RUN mise install
 
+# ─── Claude Code (installer nativo oficial: no depende de node, se autoactualiza) ──
+RUN curl -fsSL https://claude.ai/install.sh | bash
+
 # Activación en shells interactivas (completions + auto-reshim)
 RUN echo 'eval "$(mise activate bash)"' >> /root/.bashrc \
     && echo 'eval "$(mise activate zsh)"'  >> /root/.zshrc

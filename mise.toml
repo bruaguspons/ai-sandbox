@@ -15,6 +15,3 @@ ast-grep          = "latest"  # búsqueda/refactor por AST — binario: sg
 "aqua:boyter/scc" = "latest"  # conteo de líneas por lenguaje
 hyperfine         = "latest"  # benchmarking de comandos
 watchexec         = "latest"  # ejecuta comandos al detectar cambios
-
-# ─── Claude Code (backend npm de mise) ────────────────────────────
-"npm:@anthropic-ai/claude-code" = "latest"
