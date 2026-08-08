@@ -19,6 +19,7 @@ services:
       # Caché de npm/bun para no re-descargar paquetes en cada build
       # - npm-cache:/root/.npm
       # - bun-cache:/root/.bun/install/cache
+      # - pnpm-store:/root/.local/share/pnpm
 
     # Necesario para que nvm y bun estén disponibles en sesiones interactivas
     command: sleep infinity
@@ -38,5 +39,6 @@ services:
 volumes:
   claude-config:
   shell-history:
-  npm-cache:
-  bun-cache:
+  # npm-cache:
+  # bun-cache:
+  # pnpm-store:

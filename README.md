@@ -7,8 +7,94 @@ Entorno de desarrollo containerizado para usar **Claude Code** desde Docker + De
 - [Docker Desktop](https://www.docker.com/products/docker-desktop/) (o Docker Engine en Linux)
 - [VS Code](https://code.visualstudio.com/) con la extensión [Dev Containers](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers)
 - Cuenta de Anthropic con acceso a Claude Code
+- **En Windows: WSL2 con una distro real (Ubuntu) + integración de Docker Desktop habilitada.** Ver la sección de abajo — no es opcional en la práctica.
+
+---
+
+## ⚠️ Windows: cloná el proyecto DENTRO de WSL2 (sumamente recomendado)
+
+Si estás en Windows, **cloná este repo dentro del filesystem de la distro WSL (`~/`), no en `C:\`**. Esto es lo más importante de todo el setup.
+
+### Por qué
+
+Cuando Docker Desktop (backend WSL2) monta una ruta de Windows como `C:\...\claude-docker\workspaces`, lo hace a través de **9p**, un filesystem de red que es brutalmente lento para el patrón de muchos archivos chicos que usan `tsc`, `vitest`, `pnpm`, `eslint`, etc. Medido sobre un proyecto real: la misma suite de checks tarda **~5 min 33 s sobre 9p contra ~37 s sobre el filesystem nativo de Linux (ext4)** — cerca de **9x más rápido**. En lecturas puras de archivos la diferencia llega a **75x**.
+
+No es problema de las herramientas: cambiarlas no arregla nada porque todas se sientan sobre el mismo mount. Lo que arregla es **mover el árbol al filesystem de Linux**.
+
+Como en este proyecto el `docker-compose.yml` usa rutas **relativas** (`./workspaces`, `context: .`), no hace falta editar ningún archivo: alcanza con clonar todo el repo dentro de WSL y abrirlo desde ahí. Las rutas resuelven solas contra ext4.
+
+### Opción rápida: `run-wsl.bat`
+
+En la raíz del repo hay un script **`run-wsl.bat`** que automatiza casi todo el setup en Windows. Corrélo con doble clic o desde `cmd`/PowerShell y hace:
+
+1. Verifica que WSL esté disponible; si falta la distro, la instala (`wsl --install -d Ubuntu`).
+2. Verifica `git` dentro de la distro y lo instala si hace falta.
+3. Chequea que `docker` esté disponible dentro de WSL.
+4. Clona el repo en `~/claude-docker` (ext4).
+5. Abre VS Code conectado a WSL apuntando a esa carpeta.
+
+Los **dos pasos que no puede automatizar** (son de interfaz gráfica) quedan a tu cargo, y el script se frena y te avisa cuándo:
+
+- Habilitar **WSL Integration** en Docker Desktop (Settings → Resources → WSL Integration).
+- Aceptar **"Reopen in Container"** en VS Code.
+
+Si preferís hacerlo a mano —o entender qué hace cada paso— seguí las instrucciones de abajo.
+
+### Pasos (manual)
+
+1. **Instalar una distro WSL** (PowerShell, una sola vez):
+   ```powershell
+   wsl --install -d Ubuntu
+   ```
+   Verificá que quedó instalada:
+   ```powershell
+   wsl -l -v
+   ```
+
+2. **Habilitar la integración en Docker Desktop:**
+   Settings → Resources → **WSL Integration** → activá el toggle de tu distro (Ubuntu). Sin esto, `docker` no está disponible adentro de la distro.
+
+3. **Entrar a la distro:**
+   ```powershell
+   wsl -d Ubuntu
+   ```
+
+4. **Clonar el repo dentro del filesystem de Linux** (en tu home, NO en `/mnt/c`):
+   ```bash
+   cd ~
+   git clone https://github.com/bruaguspons/claude-docker.git
+   cd claude-docker
+   ```
+
+5. **Abrir VS Code conectado a WSL** (desde adentro de la distro):
+   ```bash
+   code .
+   ```
+   Esto levanta VS Code usando la extensión **Remote - WSL**, con el proyecto viviendo en Linux.
+
+6. **Reopen in Container** cuando VS Code lo ofrezca. La Dev Containers corre el compose desde el contexto WSL y el mount queda sobre ext4.
+
+7. **Verificar que NO estás sobre 9p** (dentro del container):
+   ```bash
+   findmnt -T /workspaces -o TARGET,SOURCE,FSTYPE
+   ```
+   El `FSTYPE` **no** debe decir `9p`. Si dice `9p`, abriste el proyecto desde el lado Windows — cerrá y repetí desde el paso 5.
+
+> **NO clones en `/mnt/c/...`.** Esa ruta es el filesystem de Windows visto desde WSL: sigue siendo 9p y no ganás nada. El árbol tiene que estar en `~/` (o cualquier ruta nativa de la distro).
+
+### Editar desde Windows
+
+El proyecto es accesible desde el Explorador y desde VS Code de Windows en:
+```
+\\wsl.localhost\Ubuntu\home\<tu-usuario>\claude-docker
+```
+Pero para trabajar conviene **siempre** VS Code con Remote-WSL (`code .` desde la distro): entrar por la ruta UNC reintroduce una capa de acceso lenta.
+
+---
 
 ## Inicio rápido
+
+> **Windows:** seguí primero la sección de WSL2 de arriba (o corré `run-wsl.bat`) y cloná el repo dentro de la distro. Los pasos siguientes asumen que ya estás parado en el proyecto (en Linux/WSL o en macOS).
 
 ### Con VS Code (recomendado)
 
@@ -110,6 +196,9 @@ docker compose exec devcontainer ss -tlnp
 
 # Verificar que Claude Code está disponible
 docker compose exec devcontainer claude --version
+
+# En Windows/WSL: confirmar que /workspaces NO está sobre 9p
+docker compose exec devcontainer findmnt -T /workspaces -o TARGET,SOURCE,FSTYPE
 ```
 
 ---
@@ -122,6 +211,7 @@ claude-docker/
 │   ├── Dockerfile          # Imagen base Ubuntu 24.04 + herramientas
 │   └── devcontainer.json   # Config de VS Code (extensiones, puertos, settings)
 ├── docker-compose.yml      # Servicio, volúmenes y capacidades del container
+├── run-wsl.bat             # Bootstrap Windows: setup WSL2 + clona el repo + abre VS Code
 ├── workspaces/             # Directorio para clonar proyectos (ignorado por git)
 └── README.md
 ```
@@ -209,3 +299,5 @@ git clone <mi-proyecto>
 cd mi-proyecto
 claude
 ```
+
+> **Windows:** cloná tus proyectos acá dentro **estando en WSL** (el repo completo vive en `~/claude-docker` en la distro). Si el árbol está sobre 9p, cada `pnpm install`, `typecheck` y `test` se vuelve varias veces más lento.

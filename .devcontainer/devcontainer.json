@@ -65,26 +65,6 @@
     }
   },
 
-  // Puertos comunes de desarrollo
-  "forwardPorts": [
-    3000,   // Node / React / Next.js dev server
-    4000,   // alternativa común
-    5000,   // Flask / Express
-    5432,   // PostgreSQL
-    6379,   // Redis
-    8080,   // HTTP alternativo / proxies
-    9000    // varios servicios
-    // 54321   // tu puerto original (Supabase local?)
-  ],
-
-  // Etiquetas para que VS Code muestre nombres en el panel de puertos
-  "portsAttributes": {
-    "3000": { "label": "Dev Server",   "onAutoForward": "notify" },
-    "5432": { "label": "PostgreSQL",   "onAutoForward": "silent" },
-    "6379": { "label": "Redis",        "onAutoForward": "silent" },
-    "8080": { "label": "HTTP Alt",     "onAutoForward": "notify" }
-    // "54321": { "label": "Supabase",    "onAutoForward": "notify" }
-  },
   "otherPortsAttributes": { "onAutoForward": "silent" },
 
   // postCreateCommand se ejecuta una sola vez al crear el container

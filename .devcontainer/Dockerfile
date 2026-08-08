@@ -51,33 +51,33 @@ RUN apt-get update && apt-get install -y \
 # RUN apt-get update && apt-get install -y shellcheck \
 #     && rm -rf /var/lib/apt/lists/*
 
-# RUN wget -qO /usr/local/bin/yq \
-#     https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 \
-#     && chmod +x /usr/local/bin/yq
+RUN wget -qO /usr/local/bin/yq \
+    https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 \
+    && chmod +x /usr/local/bin/yq
 
-# RUN curl -fsSL https://github.com/chmln/sd/releases/latest/download/sd-x86_64-unknown-linux-musl.tar.gz \
-#     | tar xz --wildcards --strip-components=1 -C /usr/local/bin '*/sd' \
-#     && chmod +x /usr/local/bin/sd
+RUN curl -fsSL https://github.com/chmln/sd/releases/latest/download/sd-x86_64-unknown-linux-musl.tar.gz \
+    | tar xz --wildcards --strip-components=1 -C /usr/local/bin '*/sd' \
+    && chmod +x /usr/local/bin/sd
 
-# RUN curl -fsSL https://github.com/Wilfred/difftastic/releases/latest/download/difft-x86_64-unknown-linux-gnu.tar.gz \
-#     | tar xz -C /usr/local/bin \
-#     && chmod +x /usr/local/bin/difft
+RUN curl -fsSL https://github.com/Wilfred/difftastic/releases/latest/download/difft-x86_64-unknown-linux-gnu.tar.gz \
+    | tar xz -C /usr/local/bin \
+    && chmod +x /usr/local/bin/difft
 
-# RUN curl -fsSL https://github.com/ast-grep/ast-grep/releases/latest/download/app-x86_64-unknown-linux-musl.tar.gz \
-#     | tar xz -C /usr/local/bin \
-#     && chmod +x /usr/local/bin/sg
+RUN curl -fsSL https://github.com/ast-grep/ast-grep/releases/latest/download/app-x86_64-unknown-linux-musl.tar.gz \
+    | tar xz -C /usr/local/bin \
+    && chmod +x /usr/local/bin/sg
 
-# RUN curl -fsSL https://github.com/boyter/scc/releases/latest/download/scc_Linux_x86_64.tar.gz \
-#     | tar xz -C /usr/local/bin scc \
-#     && chmod +x /usr/local/bin/scc
+RUN curl -fsSL https://github.com/boyter/scc/releases/latest/download/scc_Linux_x86_64.tar.gz \
+    | tar xz -C /usr/local/bin scc \
+    && chmod +x /usr/local/bin/scc
 
-# RUN curl -fsSL https://github.com/sharkdp/hyperfine/releases/latest/download/hyperfine-x86_64-unknown-linux-musl.tar.gz \
-#     | tar xz --strip-components=1 -C /usr/local/bin --wildcards '*/hyperfine' \
-#     && chmod +x /usr/local/bin/hyperfine
+RUN curl -fsSL https://github.com/sharkdp/hyperfine/releases/latest/download/hyperfine-x86_64-unknown-linux-musl.tar.gz \
+    | tar xz --strip-components=1 -C /usr/local/bin --wildcards '*/hyperfine' \
+    && chmod +x /usr/local/bin/hyperfine
 
-# RUN curl -fsSL https://github.com/watchexec/watchexec/releases/latest/download/watchexec-2.2.0-x86_64-unknown-linux-musl.tar.xz \
-#     | tar xJ --strip-components=1 -C /usr/local/bin --wildcards '*/watchexec' \
-#     && chmod +x /usr/local/bin/watchexec
+RUN curl -fsSL https://github.com/watchexec/watchexec/releases/latest/download/watchexec-2.2.0-x86_64-unknown-linux-musl.tar.xz \
+    | tar xJ --strip-components=1 -C /usr/local/bin --wildcards '*/watchexec' \
+    && chmod +x /usr/local/bin/watchexec
 
 # ─── Node via nvm ─────────────────────────────────────────────────────────────
 ENV NVM_DIR=/root/.nvm
@@ -90,6 +90,9 @@ RUN curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.4/install.sh | b
 # ─── Claude Code + Bun ────────────────────────────────────────────────────────
 RUN . "$NVM_DIR/nvm.sh" && npm install -g @anthropic-ai/claude-code
 RUN curl -fsSL https://bun.sh/install | bash
+
+# ─── pnpm ─────────────────────────────────────────────────────────────────────
+RUN . "$NVM_DIR/nvm.sh" && npm install -g pnpm
 
 # ─── Homebrew (Linuxbrew) ─────────────────────────────────────────────────────
 # RUN useradd -m -s /bin/bash linuxbrew \
