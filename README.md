@@ -162,6 +162,22 @@ run-wsl.bat --name trabajo --agents claude,codex      # Windows (WSL)
 
 Si la instancia ya existía y cambiás los agentes, hacé "Rebuild Container" en VS Code (o `docker compose up -d --build`) para que la imagen los instale.
 
+#### Ejemplo de uso: un lanzador por instancia
+
+Para no tipear las opciones cada vez, creá un `.bat` (Windows) o `.sh` (Linux/macOS) con una sola línea que invoque el script del repo clonado:
+
+```bat
+:: job.bat
+<repo_cloned>\run-wsl.bat --name job --agents claude,codex,opencode
+```
+
+```bash
+# job.sh
+bash <repo_cloned>/run.sh --name job --agents claude,codex,opencode
+```
+
+Reemplazá `<repo_cloned>` por la ruta donde clonaste este repo. Ejecutando ese archivo (doble clic o desde la terminal) levantás siempre la misma instancia `job` con todos los agentes disponibles (Claude Code, Codex y OpenCode).
+
 > **Windows:** si preferís no usar `run-wsl.bat`, seguí primero la sección de WSL2 de arriba y cloná el repo dentro de la distro. Los pasos manuales de abajo asumen que ya estás parado en el proyecto (en Linux/WSL o en macOS).
 
 ### Con VS Code (recomendado)
