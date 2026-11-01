@@ -3,24 +3,53 @@ setlocal enableextensions
 chcp 65001 >nul
 
 REM ============================================================
-REM  claude-docker :: bootstrap WSL2
+REM  ai-sandbox :: bootstrap WSL2
 REM  Clona el repo DENTRO del filesystem de Linux (ext4) y abre
 REM  VS Code conectado a WSL, para evitar el mount 9p (lento).
 REM
 REM  Este .bat es un bootstrap: puede vivir en cualquier lado de
 REM  Windows (no necesita el repo clonado de antemano).
-REM  Ejecutalo con doble clic o desde cmd/PowerShell.
+REM  Ejecutalo con doble clic o desde cmd/PowerShell:
+REM    run-wsl.bat [--name <nombre>]
 REM ============================================================
 
 REM ---- Config (edita si hace falta) --------------------------
 set "DISTRO=Ubuntu"
-set "TARGET_DIR=claude-docker"
-set "REPO_URL=https://github.com/bruaguspons/claude-docker.git"
+set "TARGET_DIR=ai-sandbox"
+set "REPO_URL=https://github.com/bruaguspons/ai-sandbox.git"
 REM  Podes hardcodear la URL arriba; si la dejas vacia, te la pide.
 REM ------------------------------------------------------------
 
+REM ---- Argumentos: --name <nombre> ----------------------------
+REM  Define el directorio y el nombre de la instancia (container +
+REM  volumenes de persistencia). Default: ai-sandbox.
+:parse_args
+if "%~1"=="" goto :args_done
+if /i "%~1"=="--name" goto :set_name
+if /i "%~1"=="-n" goto :set_name
+echo [ERROR] Argumento desconocido: %~1
+echo         Uso: %~nx0 [--name ^<nombre^>]
+goto :fail
+:set_name
+if "%~2"=="" (
+  echo [ERROR] Falta el valor de %~1.
+  goto :fail
+)
+set "TARGET_DIR=%~2"
+shift
+shift
+goto :parse_args
+:args_done
+
+REM  Debe ser un nombre de proyecto Compose valido
+echo %TARGET_DIR%| findstr /r /x "[abcdefghijklmnopqrstuvwxyz0123456789][abcdefghijklmnopqrstuvwxyz0123456789_-]*" >nul
+if errorlevel 1 (
+  echo [ERROR] Nombre invalido: '%TARGET_DIR%'. Usa [a-z0-9_-], empezando con letra o digito.
+  goto :fail
+)
+
 echo.
-echo === claude-docker :: setup WSL2 ===
+echo === ai-sandbox :: setup WSL2 ===
 echo.
 
 REM ---- 1. Verificar que WSL existe ---------------------------
@@ -77,6 +106,14 @@ if errorlevel 1 (
   echo [ERROR] Fallo el git clone.
   goto :fail
 )
+
+REM  Persistir el nombre de la instancia en .env (lo lee docker compose)
+wsl -d %DISTRO% -- bash -lc "cd ~/'%TARGET_DIR%' && { [ -f .env ] || cp .env.example .env 2>/dev/null || : > .env; } && { grep -v '^SANDBOX_NAME=' .env; echo 'SANDBOX_NAME=%TARGET_DIR%'; } > .env.tmp && mv .env.tmp .env"
+if errorlevel 1 (
+  echo [ERROR] No se pudo escribir SANDBOX_NAME en .env.
+  goto :fail
+)
+echo       Instancia: %TARGET_DIR% ^(SANDBOX_NAME en .env^).
 
 REM ---- 6. Resolver HOME de WSL y abrir VS Code --------------
 echo [5/6] Abriendo VS Code conectado a WSL...

@@ -1,14 +1,25 @@
+# Nombre del proyecto Compose: prefija container y volúmenes.
+# Distintos SANDBOX_NAME = instancias con persistencia aislada.
+name: ${SANDBOX_NAME:-ai-sandbox}
+
 services:
   devcontainer:
     build:
       context: .
       dockerfile: .devcontainer/Dockerfile
+      args:
+        # Lista separada por comas (claude,codex,opencode). Vacío = ninguno.
+        AGENTS: ${AGENTS:-}
     volumes:
       # Workspace principal
       - ./workspaces:/workspaces:cached
 
-      # Persistir configuración de Claude Code entre rebuilds
+      # Persistir configuración y credenciales de cada agente entre rebuilds
+      # (un volumen sin agente instalado es inofensivo)
       - claude-config:/root/.claude
+      - codex-config:/root/.codex
+      - opencode-config:/root/.config/opencode
+      - opencode-data:/root/.local/share/opencode
 
       # Persistir historial de bash/zsh
       - shell-history:/root/.shell_history
@@ -21,8 +32,6 @@ services:
       # - bun-cache:/root/.bun/install/cache
       # - pnpm-store:/root/.local/share/pnpm
 
-    # Necesario para que nvm y bun estén disponibles en sesiones interactivas
-    command: sleep infinity
 
     # Permite usar herramientas de red como lsof, ss, etc.
     network_mode: host  # o usar bridge si preferís aislamiento
@@ -38,6 +47,9 @@ services:
 
 volumes:
   claude-config:
+  codex-config:
+  opencode-config:
+  opencode-data:
   shell-history:
   # npm-cache:
   # bun-cache:

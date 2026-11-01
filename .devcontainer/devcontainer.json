@@ -1,5 +1,5 @@
 {
-  "name": "Claude Code Dev",
+  "name": "AI Sandbox",
   "dockerComposeFile": "../docker-compose.yml",
   "service": "devcontainer",
   "workspaceFolder": "/workspaces",
@@ -33,8 +33,9 @@
         "christian-kohler.path-intellisense",
         "wayou.vscode-todo-highlight", // resalta TODO/FIXME
 
-        // AI / Claude Code
-        "anthropic.claude-code"        // extensión oficial si la usás desde VS Code
+        // AI: Claude Code y Codex (OpenCode no tiene extensión verificada)
+        "anthropic.claude-code",
+        "openai.chatgpt"
       ],
       "settings": {
         "terminal.integrated.defaultProfile.linux": "bash",
@@ -71,7 +72,8 @@
   "postCreateCommand": "git config --global --add safe.directory /workspaces",
 
   // postStartCommand se ejecuta cada vez que arranca
-  "postStartCommand": "claude --version && echo '✅ Claude Code listo'",
+  // Tolerante: sin agentes instalados también sale con 0
+  "postStartCommand": "ai-sandbox-post-start",
 
   "features": {}
 }

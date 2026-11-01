@@ -1,4 +1,10 @@
 workspaces/*
 !workspaces/.gitkeep
-.atl/
+
+.agents
+.atl
 .claude
+CLAUDE.md
+skills-lock.json
+
+.env
