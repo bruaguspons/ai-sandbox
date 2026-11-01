@@ -143,6 +143,17 @@ if defined AGENTS_SET (
   echo       Agentes: %AGENTS% ^(AGENTS en .env^).
 )
 
+REM  Compose 5.x construye con buildx bake, que exige --allow=fs.read
+REM  para leer el Dockerfile-with-features que Dev Containers genera
+REM  fuera del contexto. Dev Containers no lo pasa: se desactiva el chequeo.
+setx BUILDX_BAKE_ENTITLEMENTS_FS 0 >nul
+if errorlevel 1 (
+  echo [ERROR] No se pudo guardar BUILDX_BAKE_ENTITLEMENTS_FS.
+  goto :fail
+)
+set "BUILDX_BAKE_ENTITLEMENTS_FS=0"
+echo       Docker: BUILDX_BAKE_ENTITLEMENTS_FS=0 ^(variable de usuario^).
+
 REM ---- 4. Abrir VS Code -----------------------------------------
 echo [4/4] Abriendo VS Code...
 where code >nul 2>&1
@@ -158,6 +169,8 @@ echo.
 echo Casi listo. Ultimo paso ^(manual, en VS Code^):
 echo   Cuando VS Code abra la carpeta, acepta "Reopen in Container".
 echo   Si el container ya existia y cambiaste --agents, usa "Rebuild Container".
+echo   Si VS Code ya estaba abierto, cerralo por completo antes, para que
+echo   tome BUILDX_BAKE_ENTITLEMENTS_FS.
 echo.
 goto :done
 

@@ -163,6 +163,21 @@ if errorlevel 1 (
 echo       Agentes: %AGENTS% ^(AGENTS en .env^).
 :agents_done
 
+REM  Compose 5.x construye con buildx bake, que exige --allow=fs.read
+REM  para leer el Dockerfile-with-features que Dev Containers genera en
+REM  /tmp (fuera del contexto). Dev Containers no lo pasa, asi que se
+REM  desactiva el chequeo. VS Code corre docker via "wsl -e /bin/sh",
+REM  que no lee ~/.bashrc: la variable viaja desde Windows con WSLENV.
+call :persist_bake_env
+if errorlevel 1 goto :fail
+set "BUILDX_BAKE_ENTITLEMENTS_FS=0"
+if defined WSLENV (
+  set "WSLENV=%WSLENV%:BUILDX_BAKE_ENTITLEMENTS_FS/u"
+) else (
+  set "WSLENV=BUILDX_BAKE_ENTITLEMENTS_FS/u"
+)
+echo       Docker: BUILDX_BAKE_ENTITLEMENTS_FS=0 ^(variable de usuario + WSLENV^).
+
 REM ---- 6. Resolver HOME de WSL y abrir VS Code --------------
 echo [5/6] Abriendo VS Code conectado a WSL...
 set "WSL_HOME="
@@ -185,6 +200,8 @@ echo.
 echo [6/6] Casi listo. Ultimos pasos ^(manuales, en VS Code^):
 echo   1^) Cuando VS Code abra la carpeta, aceptá "Reopen in Container".
 echo      Si el container ya existia y cambiaste --agents, usa "Rebuild Container".
+echo      Si VS Code ya estaba abierto, cerralo por completo antes, para que
+echo      tome BUILDX_BAKE_ENTITLEMENTS_FS.
 echo   2^) Ya dentro del container, verifica que NO estas sobre 9p:
 echo        findmnt -T /workspaces -o TARGET,SOURCE,FSTYPE
 echo      El FSTYPE no debe decir 9p.
@@ -194,6 +211,28 @@ goto :done
 :bad_agents
 echo [ERROR] Agentes invalidos: '%AGENTS%'. Usa nombres [a-z0-9-] separados por coma ^(ej: claude,codex^).
 goto :fail
+
+REM  Persiste BUILDX_BAKE_ENTITLEMENTS_FS=0 como variable de usuario y la
+REM  agrega al WSLENV de usuario (leido del registro, no del proceso, para
+REM  no copiar el WSLENV de sistema al de usuario). Idempotente.
+:persist_bake_env
+setx BUILDX_BAKE_ENTITLEMENTS_FS 0 >nul
+if errorlevel 1 (
+  echo [ERROR] No se pudo guardar BUILDX_BAKE_ENTITLEMENTS_FS.
+  exit /b 1
+)
+set "_USER_WSLENV="
+for /f "tokens=2,*" %%a in ('reg query HKCU\Environment /v WSLENV 2^>nul ^| findstr /i /b /c:"    WSLENV"') do set "_USER_WSLENV=%%b"
+echo :%_USER_WSLENV%:| findstr /i /c:":BUILDX_BAKE_ENTITLEMENTS_FS" >nul
+if not errorlevel 1 exit /b 0
+set "_NEW_WSLENV=BUILDX_BAKE_ENTITLEMENTS_FS/u"
+if defined _USER_WSLENV set "_NEW_WSLENV=%_USER_WSLENV%:%_NEW_WSLENV%"
+setx WSLENV "%_NEW_WSLENV%" >nul
+if errorlevel 1 (
+  echo [ERROR] No se pudo actualizar WSLENV.
+  exit /b 1
+)
+exit /b 0
 
 :fail
 echo.

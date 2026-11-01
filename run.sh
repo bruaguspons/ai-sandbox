@@ -105,6 +105,17 @@ if [ "$AGENTS_SET" -eq 1 ]; then
   echo "      Agentes: ${AGENTS:-ninguno} (AGENTS en .env)."
 fi
 
+# Compose 5.x construye con buildx bake, que exige --allow=fs.read para
+# leer el Dockerfile-with-features que Dev Containers genera en /tmp
+# (fuera del contexto). Dev Containers no lo pasa: se desactiva el chequeo.
+# Va en ~/.profile porque VS Code lo lee al resolver el entorno del shell.
+BAKE_LINE="export BUILDX_BAKE_ENTITLEMENTS_FS=0"
+if ! grep -qxF "$BAKE_LINE" "$HOME/.profile" 2>/dev/null; then
+  printf '\n# ai-sandbox: Dev Containers + Compose bake\n%s\n' "$BAKE_LINE" >> "$HOME/.profile"
+fi
+export BUILDX_BAKE_ENTITLEMENTS_FS=0
+echo "      Docker: BUILDX_BAKE_ENTITLEMENTS_FS=0 (en ~/.profile)."
+
 # ---- 4. Abrir VS Code -----------------------------------------
 echo "[4/4] Abriendo VS Code..."
 if command -v code >/dev/null 2>&1; then
@@ -120,5 +131,7 @@ echo
 echo "Casi listo. Último paso (manual, en VS Code):"
 echo "  Cuando VS Code abra la carpeta, aceptá \"Reopen in Container\"."
 echo "  Si el container ya existía y cambiaste --agents, usá \"Rebuild Container\"."
+echo "  Si VS Code ya estaba abierto, cerralo por completo antes, para que"
+echo "  tome BUILDX_BAKE_ENTITLEMENTS_FS."
 echo
 echo "Listo."
