@@ -9,23 +9,30 @@ REM
 REM  Este .bat es un bootstrap: puede vivir en cualquier lado de
 REM  Windows (no necesita el repo clonado de antemano).
 REM  Ejecutalo con doble clic o desde cmd/PowerShell:
-REM    run.bat [--name <nombre>]
+REM    run.bat [--name <nombre>] [--agents <lista>]
 REM ============================================================
 
 REM ---- Config (edita si hace falta) --------------------------
 set "TARGET_DIR=ai-sandbox"
+set "AGENTS="
+set "AGENTS_SET="
 set "REPO_URL=https://github.com/bruaguspons/ai-sandbox.git"
 REM ------------------------------------------------------------
 
-REM ---- Argumentos: --name <nombre> ----------------------------
-REM  Define el directorio y el nombre de la instancia (container +
-REM  volumenes de persistencia). Default: ai-sandbox.
+REM ---- Argumentos: --name <nombre> --agents <lista> ------------
+REM  --name define el directorio y el nombre de la instancia
+REM  (container + volumenes de persistencia). Default: ai-sandbox.
+REM  --agents define los agentes a instalar, separados por coma
+REM  (ej: claude,codex,opencode). Se escribe como AGENTS en .env;
+REM  sin --agents se respeta lo que ya tenga el .env.
 :parse_args
 if "%~1"=="" goto :args_done
 if /i "%~1"=="--name" goto :set_name
 if /i "%~1"=="-n" goto :set_name
+if /i "%~1"=="--agents" goto :set_agents
+if /i "%~1"=="-a" goto :set_agents
 echo [ERROR] Argumento desconocido: %~1
-echo         Uso: %~nx0 [--name ^<nombre^>]
+echo         Uso: %~nx0 [--name ^<nombre^>] [--agents ^<lista^>]
 goto :fail
 :set_name
 if "%~2"=="" (
@@ -36,6 +43,29 @@ set "TARGET_DIR=%~2"
 shift
 shift
 goto :parse_args
+:set_agents
+set "_ARG=%~2"
+if "%_ARG%"=="" (
+  echo [ERROR] Falta el valor de %~1.
+  goto :fail
+)
+if "%_ARG:~0,1%"=="-" (
+  echo [ERROR] Falta el valor de %~1.
+  goto :fail
+)
+set "AGENTS=%_ARG%"
+set "AGENTS_SET=1"
+shift
+shift
+REM  cmd separa argumentos por coma: "claude,codex" llega como dos
+REM  tokens. Se juntan los siguientes hasta el proximo flag.
+:more_agents
+set "_ARG=%~1"
+if "%_ARG%"=="" goto :parse_args
+if "%_ARG:~0,1%"=="-" goto :parse_args
+set "AGENTS=%AGENTS%,%_ARG%"
+shift
+goto :more_agents
 :args_done
 
 REM  Debe ser un nombre de proyecto Compose valido
@@ -43,6 +73,14 @@ echo %TARGET_DIR%| findstr /r /x "[abcdefghijklmnopqrstuvwxyz0123456789][abcdefg
 if errorlevel 1 (
   echo [ERROR] Nombre invalido: '%TARGET_DIR%'. Usa [a-z0-9_-], empezando con letra o digito.
   goto :fail
+)
+
+REM  Lista de agentes: nombres [a-z0-9-] separados por coma
+if defined AGENTS_SET (
+  echo %AGENTS%| findstr /r /x "[abcdefghijklmnopqrstuvwxyz0123456789-][abcdefghijklmnopqrstuvwxyz0123456789,-]*" >nul
+  if errorlevel 1 goto :bad_agents
+  if "%AGENTS:~-1%"=="," goto :bad_agents
+  if not "%AGENTS:,,=%"=="%AGENTS%" goto :bad_agents
 )
 
 echo.
@@ -97,6 +135,14 @@ findstr /v /b "SANDBOX_NAME=" "%ENV_FILE%" > "%ENV_FILE%.tmp"
 move /y "%ENV_FILE%.tmp" "%ENV_FILE%" >nul
 echo       Instancia: %TARGET_DIR% ^(SANDBOX_NAME en .env^).
 
+REM  Persistir los agentes en .env (build arg AGENTS de docker compose)
+if defined AGENTS_SET (
+  findstr /v /b "AGENTS=" "%ENV_FILE%" > "%ENV_FILE%.tmp"
+  >>"%ENV_FILE%.tmp" echo AGENTS=%AGENTS%
+  move /y "%ENV_FILE%.tmp" "%ENV_FILE%" >nul
+  echo       Agentes: %AGENTS% ^(AGENTS en .env^).
+)
+
 REM ---- 4. Abrir VS Code -----------------------------------------
 echo [4/4] Abriendo VS Code...
 where code >nul 2>&1
@@ -111,8 +157,13 @@ if errorlevel 1 (
 echo.
 echo Casi listo. Ultimo paso ^(manual, en VS Code^):
 echo   Cuando VS Code abra la carpeta, acepta "Reopen in Container".
+echo   Si el container ya existia y cambiaste --agents, usa "Rebuild Container".
 echo.
 goto :done
+
+:bad_agents
+echo [ERROR] Agentes invalidos: '%AGENTS%'. Usa nombres [a-z0-9-] separados por coma ^(ej: claude,codex^).
+goto :fail
 
 :fail
 echo.

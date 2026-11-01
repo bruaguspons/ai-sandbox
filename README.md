@@ -151,6 +151,17 @@ run-wsl.bat --name trabajo      # Windows (WSL)
 
 Sin `--name` se usa `ai-sandbox` (comportamiento anterior, mismos volúmenes). Nombre válido: `[a-z0-9_-]`, empezando con letra o dígito. Sin los scripts, setealo a mano en `.env` (`SANDBOX_NAME=trabajo`).
 
+#### Agentes: `--agents`
+
+Los tres aceptan `--agents <lista>` (o `-a`): agentes a instalar en la imagen, separados por coma. Se escribe como `AGENTS` en el `.env`. Sin `--agents`, se respeta lo que ya tenga el `.env` (por defecto, ninguno).
+
+```bash
+bash run.sh --name trabajo --agents claude,codex      # Linux/macOS
+run-wsl.bat --name trabajo --agents claude,codex      # Windows (WSL)
+```
+
+Si la instancia ya existía y cambiás los agentes, hacé "Rebuild Container" en VS Code (o `docker compose up -d --build`) para que la imagen los instale.
+
 > **Windows:** si preferís no usar `run-wsl.bat`, seguí primero la sección de WSL2 de arriba y cloná el repo dentro de la distro. Los pasos manuales de abajo asumen que ya estás parado en el proyecto (en Linux/WSL o en macOS).
 
 ### Con VS Code (recomendado)

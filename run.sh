@@ -7,16 +7,22 @@
 #
 #  Este script es un bootstrap: puede vivir en cualquier lado
 #  (no necesita el repo clonado de antemano). Ejecutalo con:
-#    bash run.sh [--name <nombre>]
+#    bash run.sh [--name <nombre>] [--agents <lista>]
 #
 #  --name define el directorio (~/<nombre>) y el nombre de la
 #  instancia (container + volúmenes de persistencia). Permite
 #  tener varias instancias aisladas. Default: ai-sandbox.
+#
+#  --agents define los agentes a instalar en la imagen, separados
+#  por coma (ej: claude,codex,opencode). Se escribe como AGENTS en
+#  .env. Sin --agents, se respeta lo que ya tenga el .env.
 # ============================================================
 set -euo pipefail
 
 # ---- Config (editá si hace falta) ---------------------------
 TARGET_DIR="ai-sandbox"
+AGENTS=""
+AGENTS_SET=0
 REPO_URL="https://github.com/bruaguspons/ai-sandbox.git"
 # ---------------------------------------------------------------
 
@@ -25,8 +31,11 @@ while [ $# -gt 0 ]; do
     -n|--name)
       [ $# -ge 2 ] || { echo "[ERROR] Falta el valor de $1."; exit 1; }
       TARGET_DIR="$2"; shift 2 ;;
+    -a|--agents)
+      [ $# -ge 2 ] || { echo "[ERROR] Falta el valor de $1."; exit 1; }
+      AGENTS="$2"; AGENTS_SET=1; shift 2 ;;
     -h|--help)
-      echo "Uso: bash run.sh [--name <nombre>]"; exit 0 ;;
+      echo "Uso: bash run.sh [--name <nombre>] [--agents <lista>]"; exit 0 ;;
     *)
       echo "[ERROR] Argumento desconocido: $1"; exit 1 ;;
   esac
@@ -36,6 +45,15 @@ done
 if ! [[ "$TARGET_DIR" =~ ^[a-z0-9][a-z0-9_-]*$ ]]; then
   echo "[ERROR] Nombre inválido: '$TARGET_DIR'. Usá [a-z0-9_-], empezando con letra o dígito."
   exit 1
+fi
+
+# Lista de agentes: nombres [a-z0-9-] separados por coma (sin espacios)
+if [ "$AGENTS_SET" -eq 1 ]; then
+  AGENTS="$(printf '%s' "$AGENTS" | tr -d ' ' | tr '[:upper:]' '[:lower:]')"
+  if ! [[ "$AGENTS" =~ ^([a-z0-9-]+(,[a-z0-9-]+)*)?$ ]]; then
+    echo "[ERROR] Agentes inválidos: '$AGENTS'. Usá nombres [a-z0-9-] separados por coma (ej: claude,codex)."
+    exit 1
+  fi
 fi
 
 echo
@@ -80,6 +98,13 @@ fi
 mv "$ENV_FILE.tmp" "$ENV_FILE"
 echo "      Instancia: ${TARGET_DIR} (SANDBOX_NAME en .env)."
 
+# Persistir los agentes en .env (build arg AGENTS de docker compose)
+if [ "$AGENTS_SET" -eq 1 ]; then
+  { grep -v '^AGENTS=' "$ENV_FILE" || true; echo "AGENTS=${AGENTS}"; } > "$ENV_FILE.tmp"
+  mv "$ENV_FILE.tmp" "$ENV_FILE"
+  echo "      Agentes: ${AGENTS:-ninguno} (AGENTS en .env)."
+fi
+
 # ---- 4. Abrir VS Code -----------------------------------------
 echo "[4/4] Abriendo VS Code..."
 if command -v code >/dev/null 2>&1; then
@@ -94,5 +119,6 @@ fi
 echo
 echo "Casi listo. Último paso (manual, en VS Code):"
 echo "  Cuando VS Code abra la carpeta, aceptá \"Reopen in Container\"."
+echo "  Si el container ya existía y cambiaste --agents, usá \"Rebuild Container\"."
 echo
 echo "Listo."
